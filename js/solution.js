@@ -91,6 +91,7 @@ class BgImageLoader {
 	init() {
 		// Устанавливаем в окне начальное состояние
 		this.menu.dataset.state = 'initial';
+		this.menu.dataset.type = 'initial';
 		this.menuBurger.style.display = 'none';
 
 		this.currentImage.src = '';
@@ -102,10 +103,12 @@ class BgImageLoader {
 			this.loadedFromLink = true;
 			this.getImageData(urlImgID);
 		}
+
+		// dragMenu.setMenuSize();
 	}
 
 	registerEvents() {
-		this.container.addEventListener('drop', this.loadFile);
+		this.container.addEventListener('drop', event =>  this.loadFile(event));
 		this.container.addEventListener('dragover', e => {
 			e.preventDefault();
 		});
@@ -121,15 +124,16 @@ class BgImageLoader {
 			event.stopPropagation();
 		});
 
-		this.inputImage.addEventListener('change', this.loadFile);
-		this.menu.addEventListener('click', this.menuClickHandler);
-		this.menuShare.addEventListener('click', this.shareClick);
-		this.menuDraw.addEventListener('click', this.drawClick);
-		this.menuComments.addEventListener('click', this.commentClick);
+		this.inputImage.addEventListener('change', event => this.loadFile(event));
+		this.menu.addEventListener('click', event => this.menuClickHandler(event));
+		this.menuShare.addEventListener('click', event => this.shareClick(event));
+		this.menuDraw.addEventListener('click', event => this.drawClick(event));
+		this.menuComments.addEventListener('click', event => this.commentClick(event));
 
 		window.addEventListener('beforeunload', () => {
 			localStorage.clear();
 		});
+		window.addEventListener('resize', event => this.onResizeReload(event))
 	}
 
 	loadFile(e) {
@@ -141,10 +145,10 @@ class BgImageLoader {
 			file = Array.from(event.currentTarget.files)[0];
 		}
 		else {
-			if (this.menu.dataset.state === 'work') {
-				bgImageLoader.errorMessage.textContent = 'Чтобы загрузить новое изображение, пожалуйста, воспользуйтесь' +
+			if (this.menu.dataset.state === 'selected' || this.menu.dataset.state === 'default') {
+				this.errorMessage.textContent = 'Чтобы загрузить новое изображение, пожалуйста, воспользуйтесь' +
 					' пунктом "Згрузить новое" в меню';
-				bgImageLoader.imageError.style.display = 'block';
+				this.showError();
 				return;
 			}
 			file = Array.from(event.dataTransfer.files)[0];
@@ -152,8 +156,10 @@ class BgImageLoader {
 
 		// Если получили файл отправляем его на загрузку на сервак
 		if (file) {
-			bgImageLoader.upLoadFile(file);
+			this.upLoadFile(file);
 		}
+
+		dragMenu.setMenuSize();
 	}
 
 	upLoadFile(file) {
@@ -169,7 +175,7 @@ class BgImageLoader {
 
 			// Если до этого торчала ошибка, прячем ее
 			if (this.imageError.style.display === 'block') {
-				this.imageError.style.display = 'none';
+				this.hideError();
 			}
 
 			// Убираем расширение
@@ -198,16 +204,17 @@ class BgImageLoader {
 					return res.json();
 				})
 				.then((data) => {
-					if(!this.loadedFromLink) {
-						this.getImageData(data.id);
-					}
+					// if(!this.loadedFromLink) {
+					// 	this.getImageData(data.id);
+					// }
+					this.getImageData(data.id);
 				})
 				.catch((err) => {
 					console.log(err);
 				})
 
 		} catch (e) {
-			this.imageError.style.display = 'block';
+			this.showError();
 			console.log(e.message);
 			return;
 		}
@@ -256,7 +263,7 @@ class BgImageLoader {
 
 					// Отправляем данные в класс рисования, чтобы холст расположился ровно по картинке
 					canvasPainting.setPosition(imageX, imageY, imageWidth, imageHeight);
-				}, 500);
+				}, 1000);
 
 				this.save();
 			})
@@ -270,7 +277,10 @@ class BgImageLoader {
 				// Отображаем меню
 				this.menuBurger.style.display = 'inline-block';
 				this.menu.dataset.state = 'selected';
+				this.menu.dataset.type = 'share';
 				this.menuShare.dataset.state = 'selected';
+
+				dragMenu.setMenuSize();
 			});
 	}
 
@@ -283,33 +293,52 @@ class BgImageLoader {
 	}
 
 	shareClick() {
-		bgImageLoader.menuBurger.style.display = 'inline-block';
-		bgImageLoader.menu.dataset.state = 'selected';
-		bgImageLoader.menuShare.dataset.state = 'selected';
+		if(this.imageError.style.display !== 'none') {
+			this.hideError();
+		}
+
+		this.menuBurger.style.display = 'inline-block';
+		this.menu.dataset.state = 'selected';
+		this.menu.dataset.type = 'share';
+		this.menuShare.dataset.state = 'selected';
+
+		dragMenu.setMenuSize();
 	}
 
 	drawClick() {
-		bgImageLoader.menuBurger.style.display = 'inline-block';
-		bgImageLoader.menu.dataset.state = 'selected';
-		bgImageLoader.menuDraw.dataset.state = 'selected';
+		if(this.imageError.style.display !== 'none') {
+			this.hideError();
+		}
+
+		this.menuBurger.style.display = 'inline-block';
+		this.menu.dataset.state = 'selected';
+		this.menu.dataset.type = 'draw';
+		this.menuDraw.dataset.state = 'selected';
 
 		// Инициализируем холст
 		canvasPainting.init();
+		dragMenu.setMenuSize();
 	}
 
 	commentClick() {
-		bgImageLoader.menuBurger.style.display = 'inline-block';
-		bgImageLoader.menu.dataset.state = 'selected';
-		bgImageLoader.menuComments.dataset.state = 'selected';
+		if(this.imageError.style.display !== 'none') {
+			this.hideError();
+		}
+
+		this.menuBurger.style.display = 'inline-block';
+		this.menu.dataset.state = 'selected';
+		this.menu.dataset.type = 'comment';
+		this.menuComments.dataset.state = 'selected';
 
 		// Разрешаем комментирование
 		commentsHandler.startComments();
+		dragMenu.setMenuSize();
 	}
 
 	menuClickHandler(event) {
 		// Если меню в режиме "поделиться" реагируем на кнопку копировать
 		if (event.target.classList.contains('menu_copy')) {
-			const shareLink = bgImageLoader.shareTools.firstElementChild;
+			const shareLink = this.shareTools.firstElementChild;
 
 			// Выделяем текстовое поле
 			shareLink.select();
@@ -330,23 +359,38 @@ class BgImageLoader {
 
 		// Если кнопка возврата, возвращаем в дефолтное состояние меню
 		if (event.target.classList.contains('burger') || event.target.parentElement.classList.contains('burger')) {
-			bgImageLoader.menuBurger.style.display = 'none';
-			bgImageLoader.menu.dataset.state = 'default';
+			if(this.imageError.style.display !== 'none') {
+				this.hideError();
+			}
+
+			this.menuBurger.style.display = 'none';
+			this.menu.dataset.state = 'default';
+			this.menu.dataset.type = 'default';
 
 			// Закрываем рисование
-			if (bgImageLoader.menuDraw.dataset.state === 'selected') {
+			if (this.menuDraw.dataset.state === 'selected') {
 				canvasPainting.closePaint();
 			}
 			// Отключаем комментирование
-			if (bgImageLoader.menuComments.dataset.state === 'selected') {
+			if (this.menuComments.dataset.state === 'selected') {
 				commentsHandler.stopComments();
 			}
 
 			// Состаяние в дефолт
-			bgImageLoader.menuDraw.dataset.state = '';
-			bgImageLoader.menuShare.dataset.state = '';
-			bgImageLoader.menuComments.dataset.state = '';
+			this.menuDraw.dataset.state = '';
+			this.menuShare.dataset.state = '';
+			this.menuComments.dataset.state = '';
+
+			dragMenu.setMenuSize();
 		}
+	}
+
+	showError() {
+		this.imageError.style.display = 'block';
+	}
+
+	hideError() {
+		this.imageError.style.display = 'none';
 	}
 
 	// Присвоение идентификатора изображения
@@ -362,6 +406,21 @@ class BgImageLoader {
 	// Сохранение идентификатора
 	save() {
 		sessionStorage.imageId = this.imageId;
+	}
+
+	onResizeReload(event) {
+		// Получаем данные о координатах картинки и размерах
+		const imageX = this.currentImage.getBoundingClientRect().x;
+		const imageY = this.currentImage.getBoundingClientRect().y;
+		const imageWidth = this.currentImage.offsetWidth;
+		const imageHeight = this.currentImage.offsetHeight;
+
+		// Создаем маску с рисунками, присваиваем координаты нашего изображения
+		this.loadedMask.style.position = 'absolute';
+		this.loadedMask.style.left = imageX + 'px';
+		this.loadedMask.style.top = imageY + 'px';
+
+		canvasPainting.setPosition(imageX, imageY, imageWidth, imageHeight);
 	}
 }
 
@@ -568,7 +627,11 @@ class CommentsHandler {
 	newComment(event) {
 		if (commentsHandler.addCommentsPermission) {
 			// Если клик по картинке, знаичт создается новый коммент
-			const newComment = new CommentBlock(event.pageX, event.pageY);
+
+			const imageX = bgImageLoader.currentImage.getBoundingClientRect().x;
+			const imageY = bgImageLoader.currentImage.getBoundingClientRect().y;
+
+			const newComment = new CommentBlock(event.pageX - imageX, event.pageY - imageY);
 
 			newComment.newComment();
 			commentsHandler.registerEvents();
@@ -633,15 +696,7 @@ class CommentsHandler {
 					// Прячем лоадер
 					loader.hidden = true;
 
-					// // Посик последнего добавленного коммента
-					// let time = 0;
-					// for (let key in data.comments) {
-					// 	if (time < data.comments[key].timestamp) {
-					// 		time = data.comments[key].timestamp;
-					// 	}
-					// }
-					//
-					// // Добавление коммента в существующую форму
+					// Добавление коммента в существующую форму
 					const addComment = new CommentBlock(sentCommentData.left, sentCommentData.top, sentCommentData.message);
 					addComment.someFormOpened(comment)
 
@@ -681,9 +736,14 @@ class CommentBlock {
 		this.newCommentObj = null;
 		this.newCommentBody = null;
 
+		this.commentWidth = null;
+		this.commentHeight = null;
+
 		this.app = document.querySelector('.app');
 		this.allComments = null;
 		this.activeForm = null;
+
+		window.addEventListener('resize', () => this.replaceForms());
 	}
 
 	someFormOpened(activeForm = null) {
@@ -696,27 +756,45 @@ class CommentBlock {
 
 	newComment() {
 		// Отправляем в шаблонизатор запрос на создание формы с необходиыми координатами в dataset
-		const blockObj = this.commentTemplate('', Math.round(this.x), Math.round(this.y));
+		const blockObj = this.commentTemplate();
 		this.newCommentObj = this.app.appendChild(this.engine(blockObj));
 
 		// Создается новый элемент формы
-		const commentWidth = this.newCommentObj.firstElementChild.offsetWidth;
-		const commentHeight = this.newCommentObj.firstElementChild.offsetHeight;
+		this.commentWidth = this.newCommentObj.firstElementChild.offsetWidth;
+		this.commentHeight = this.newCommentObj.firstElementChild.offsetHeight;
 		const formLoader = this.newCommentObj.querySelector('.comment .loader');
 
 		// Делаем его видимым и прописываем ему координаты, в зависимости от места, куда кликнули
 		this.newCommentObj.style.display = 'block';
 		this.newCommentObj.style.position = 'absolute';
 
-		// Отрисовываем новую форму на том месте, куда кликнули, центрируем
-		this.newCommentObj.style.left = this.x - (commentWidth / 1.3) + 'px';
-		this.newCommentObj.style.top = this.y - (commentHeight / 1.5) + 'px';
+		this.setCommentPosition();
 
 		this.newCommentBody = this.newCommentObj.querySelector('.comments__body');
 
 		// Делаем тело формы видимым
 		this.newCommentBody.style.display = 'block';
 		formLoader.hidden = true;
+	}
+
+	setCommentPosition() {
+		const imageX = bgImageLoader.currentImage.getBoundingClientRect().x;
+		const imageY = bgImageLoader.currentImage.getBoundingClientRect().y;
+
+		// Отрисовываем новую форму на том месте, куда кликнули, центрируем
+		this.newCommentObj.style.left = this.x + imageX - (this.commentWidth / 1.3) + 'px';
+		this.newCommentObj.style.top = this.y + imageY - (this.commentHeight / 1.5) + 'px';
+	}
+
+	replaceForms() {
+		this.allComments = document.querySelectorAll('.comments__form');
+		const imageX = bgImageLoader.currentImage.getBoundingClientRect().x;
+		const imageY = bgImageLoader.currentImage.getBoundingClientRect().y;
+
+		Array.from(this.allComments).forEach(commentForm => {
+			commentForm.style.left = Number(commentForm.dataset.left) + imageX - (this.commentWidth / 1.3) + 'px';
+			commentForm.style.top = Number(commentForm.dataset.top) + imageY - (this.commentHeight / 1.5) + 'px';
+		})
 	}
 
 	addComment(message = '', timestamp) {
@@ -744,7 +822,17 @@ class CommentBlock {
 
 				// Заполняем его данными
 				commentTime.textContent = new Date(timestamp).toLocaleString('ru-Ru');
-				commentText.textContent = this.message;
+				commentText.style.wordWrap = 'break-word';
+				// commentText.textContent = this.message;
+
+				if(message.split('\n').length > 1) {
+					message.split('\n').forEach(string => {
+						commentText.textContent = string + '[ui';
+					})
+				}
+				else {
+					commentText.textContent = this.message;
+				}
 			}
 
 			activeFormBody.style.display = 'none';
@@ -774,13 +862,32 @@ class CommentBlock {
 
 						// Заполняем его данными
 						commentTime.textContent = new Date(timestamp).toLocaleString('ru-Ru');
-						commentText.textContent = message;
+						commentText.style.wordWrap = 'break-word';
+
+						if(message.split('\n').length > 1) {
+							const stringsArr = message.split('\n');
+							for (let i = 0; i < message.split('\n').length; i++) {
+								if(i === 0) {
+									commentText.textContent = stringsArr[i];
+								}
+								else {
+									const newString = document.createElement('p');
+									newString.classList.add('comment__message');
+									newString.style.wordWrap = 'break-word';
+									commentText.parentNode.appendChild(newString);
+
+
+									newString.textContent = stringsArr[i];
+								}
+							}
+						}
+						else {
+							commentText.textContent = message;
+						}
 					}
 
 					activeFormBody.style.display = 'none';
 				}
-
-
 			});
 
 			// Если активного окна с сообщениями в данный момент нет, все формы скрыты
@@ -791,7 +898,7 @@ class CommentBlock {
 		return {
 			tag: 'form',
 			cls: 'comments__form',
-			attrs: {'data-left': this.x, 'data-top': this.y},
+			attrs: {'data-left': Math.round(this.x), 'data-top': Math.round(this.y)},
 			content: [
 				{
 					tag: 'span',
@@ -1119,8 +1226,24 @@ class WebSocketConnection {
 		}
 
 		if(recievedData.event === 'comment') {
-			const addComment = new CommentBlock(recievedData.comment.left, recievedData.comment.top, recievedData.comment.message);
+			const addComment = new CommentBlock(recievedData.comment.left, recievedData.comment.top, recievedData.comment.message)
 			addComment.addComment(recievedData.comment.message, recievedData.comment.timestamp);
+
+			// for (let i = 0; i <= commentsHandler.loadedCommentArr.length; i++) {
+			//
+			// 	if(commentsHandler.loadedCommentArr[i]) {
+			// 		if(commentsHandler.loadedCommentArr[i].info.left === recievedData.comment.left ||
+			// 			commentsHandler.loadedCommentArr[i].info.top === recievedData.comment.top)
+			// 		{
+			// 			addComment.addComment(recievedData.comment.message, recievedData.comment.timestamp);
+			// 			break;
+			// 		}
+			// 	}
+			// 	else if (i === commentsHandler.loadedCommentArr.length) {
+			// 		addComment.addComment(recievedData.comment.message, recievedData.comment.timestamp);
+			// 		break;
+			// 	}
+			// }
 		}
 	}
 
@@ -1164,66 +1287,98 @@ class DragMenu {
 		this.minY = 0;
 		this.maxX = window.innerWidth;
 		this.maxY = window.innerHeight;
+		this.menuWidth = 0;
+		this.menuHeight = 0;
+		this.widthObj = {};
+
+		this.menuX = 0;
 	}
 
 	registerEvents() {
-		this.menu.addEventListener('mousedown', this.takeMenu);
-		window.addEventListener('mousemove', event => this.dragMenu(event.pageX, event.pageY));
-		window.addEventListener('mouseup', this.dropMenu);
+		this.menu.addEventListener('mousedown', event => this.takeMenu(event));
+		window.addEventListener('mousemove', event => this.moveMenu(event.pageX, event.pageY));
+		window.addEventListener('mouseup', event => this.dropMenu(event));
+	}
+
+	setMenuSize() {
+		// Заполняем объект шириной элементов меню
+		if(!(this.menu.dataset.type in this.widthObj)){
+			this.widthObj[this.menu.dataset.type] = this.menu.offsetWidth;
+		}
+		else {
+			// Если ширина элемента больше, чем записана перезаписываем
+			if(!(this.widthObj[this.menu.dataset.type] > this.menu.offsetWidth))
+			this.widthObj[this.menu.dataset.type] = this.menu.offsetWidth;
+		}
+
+		const menuWidth = this.widthObj[this.menu.dataset.type];
+		const windowRight = document.querySelector('.wrap').getBoundingClientRect().right;
+
+		// Если меню выходит за пределы окна, двигаем
+		if((this.menuX + menuWidth) > windowRight) {
+			this.menu.style.left = windowRight - this.widthObj[this.menu.dataset.type] - 2 + 'px';
+			this.menuX = this.menu.getBoundingClientRect().left;
+		}
+
+		this.menuWidth = this.menu.offsetWidth;
+		this.menuHeight = this.menu.offsetHeight;
 	}
 
 	takeMenu(event) {
-		if (event.target === dragMenu.dragElement) {
+		if (event.target === this.dragElement) {
 			// Назначение меню активным элементом, участвующим в перемещении
-			dragMenu.activeElement = dragMenu.menu;
+			this.activeElement = this.menu;
 
 			// Определение границ элемента
 			const bounds = event.target.getBoundingClientRect();
 
 			// Определение границ области перемещения, 2 пикселя больше, потому что меню разваливается, если пиксель в пиксель
-			dragMenu.maxX = window.innerWidth - dragMenu.activeElement.offsetWidth - 2;
-			dragMenu.maxY = window.innerHeight - dragMenu.activeElement.offsetHeight - 2;
+			this.maxX = window.innerWidth - this.menuWidth - 2;
+			this.maxY = window.innerHeight - this.menuHeight - 2;
+			// this.maxX = window.innerWidth - this.activeElement.offsetWidth - 2;
+			// this.maxY = window.innerHeight - this.activeElement.offsetHeight - 2;
 
 			// Определения смещения элемента относительно координат курсора
-			dragMenu.shiftX = event.pageX - bounds.left - window.pageXOffset;
-			dragMenu.shiftY = event.pageY - bounds.top - window.pageYOffset;
+			this.shiftX = event.pageX - bounds.left - window.pageXOffset;
+			this.shiftY = event.pageY - bounds.top - window.pageYOffset;
 		}
 	}
 
-	dragMenu(x, y) {
+	moveMenu(x, y) {
 		// Есть ли активный элемент, который надо двигать?
-		if (dragMenu.activeElement) {
+		if (this.activeElement) {
 			// Перерасчет новых координат элемента
-			x = x - dragMenu.shiftX;
-			y = y - dragMenu.shiftY;
-			x = Math.min(x, dragMenu.maxX);
-			y = Math.min(y, dragMenu.maxY);
-			x = Math.max(x, dragMenu.minX);
-			y = Math.max(y, dragMenu.minY);
+			x = x - this.shiftX;
+			y = y - this.shiftY;
+			x = Math.min(x, this.maxX);
+			y = Math.min(y, this.maxY);
+			x = Math.max(x, this.minX);
+			y = Math.max(y, this.minY);
 
 			// Присвоение свойству элемента новых координат
-			dragMenu.activeElement.style.left = x + 'px';
-			dragMenu.activeElement.style.top = y + 'px';
+			this.activeElement.style.left = x + 'px';
+			this.activeElement.style.top = y + 'px';
 		}
 	}
 
 	dropMenu() {
-		if (dragMenu.activeElement) {
+		if (this.activeElement) {
 			// Отпускаем элемент
-			dragMenu.activeElement = null;
+			this.activeElement = null;
+
+			this.menuX = this.menu.getBoundingClientRect().left;
 		}
 	}
 }
 
-const bgImageLoader = new BgImageLoader(document.querySelector('.wrap'));
 const dragMenu = new DragMenu(document.querySelector('.menu'));
+const bgImageLoader = new BgImageLoader(document.querySelector('.wrap'));
 const commentsHandler = new CommentsHandler(bgImageLoader.commentsTools);
 const canvasPainting = new CanvasPainting(bgImageLoader.drawTools);
 const webSocketConnection = new WebSocketConnection();
 
 canvasPainting.create();
 dragMenu.registerEvents();
-
 
 function throttle(callback) {
 	let isWaiting = false;
