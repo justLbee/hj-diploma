@@ -155,25 +155,18 @@ class CanvasPainting {
 				});
 			});
 		}
-
-		// if(!this.firstCurve) {
-		// 	webSocketConnection.closeConnection();
-		// 	webSocketConnection.connectToWs(bgImageLoader.imageId);
-		//
-		// 	this.firstCurve = true;
-		// }
 	}
 
 	clearCanvas() {
 		// Удаление первого элемента массива, который был успешно отправлен только что
 		// this.curves.shift();
 
-		this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+		// this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
 		// Через секунду  после получения ответа с сервера чистим холст, чтобы не было такого явного мерцания рисования
 		setTimeout(() => {
-			// this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+			this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
 
 			this.curves.shift();
-		}, 500)
+		}, 2000)
 	}
 }

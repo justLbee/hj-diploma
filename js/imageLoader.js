@@ -183,9 +183,6 @@ class BgImageLoader {
 					return res.json();
 				})
 				.then((data) => {
-					// if(!this.loadedFromLink) {
-					// 	this.getImageData(data.id);
-					// }
 					this.getImageData(data.id);
 				})
 				.catch((err) => {

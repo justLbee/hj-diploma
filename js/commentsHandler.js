@@ -65,7 +65,7 @@ class CommentsHandler {
 	registerEvents() {
 		// При клике по картинке добавляем нвоый коммент
 		if (this.addCommentsPermission) {
-			this.commentsField.addEventListener('click', this.newComment);
+			this.commentsField.addEventListener('click', event => this.newComment(event));
 		}
 
 		this.toggleComments.addEventListener('change', event => this.switchComments(event));
@@ -149,18 +149,20 @@ class CommentsHandler {
 		}
 
 		// Выбираем все созданные элементы формы на странице и отлавливаем клик по ним
-		this.registerEvents();
+		// this.registerEvents();
 	}
 
 	switchComments(event) {
-		if (event.target.value === 'on') {
-			Array.from(this.allCommentsDom).forEach(comment => {
+    this.allCommentsDom = document.querySelectorAll('.comments__form');
+    if (event.target.value === 'on') {
+      Array.from(this.allCommentsDom).forEach(comment => {
 				comment.style.display = 'block';
 			});
 		}
 		else {
 			Array.from(this.allCommentsDom).forEach(comment => {
-				comment.style.display = 'none';
+
+        comment.style.display = 'none';
 			});
 		}
 	}
@@ -198,7 +200,10 @@ class CommentsHandler {
 
 	newComment(event) {
 		if (commentsHandler.addCommentsPermission) {
-			// Если клик по картинке, знаичт создается новый коммент
+      if (this.oldComment) {
+        this.oldComment.querySelector('.comments__body').style.display = 'none';
+      }
+      // Если клик по картинке, знаичт создается новый коммент
 
 			const imageX = bgImageLoader.currentImage.getBoundingClientRect().x;
 			const imageY = bgImageLoader.currentImage.getBoundingClientRect().y;
@@ -238,6 +243,7 @@ class CommentsHandler {
 		// Если клик по кнопке отправить
 		if (event.target.classList.contains('comments__submit')) {
 			event.preventDefault();
+      this.oldComment = comment;
 
 			const loader = comment.querySelector('.loader');
 

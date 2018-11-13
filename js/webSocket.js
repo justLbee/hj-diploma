@@ -44,7 +44,9 @@ class WebSocketConnection {
 		const recievedData = JSON.parse(event.data);
 
 		if (recievedData.event === 'pic') {
-			commentsHandler.init(recievedData.pic.comments);
+			setTimeout(() => {
+        commentsHandler.init(recievedData.pic.comments);
+      }, 2000);
 
 			if (recievedData.pic.mask) {
 				bgImageLoader.loadMask(recievedData.pic.mask);
