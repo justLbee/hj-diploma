@@ -62,6 +62,8 @@ class CanvasPainting {
 		// Добавление в ДОМ, создание контекста
 		commentsHandler.app.appendChild(this.drawingCanvas);
 		this.drawingCtx = this.drawingCanvas.getContext('2d');
+
+    this.registerEvents();
 	}
 
 	setPosition(x, y, width, height) {
@@ -82,16 +84,33 @@ class CanvasPainting {
 			}
 		});
 
-		this.registerEvents();
+
 	}
 
 	choseColor(event) {
 		// Получение информации о том, какой цвет был выбран и запись данных в переменную
 		const clickedElement = event.target;
 
-		if (clickedElement.classList.contains('menu__color')) {
+    if (clickedElement.classList.contains('menu__color')) {
 			const inputColor = event.target;
-			this.activeColor = inputColor.value;
+
+			switch (inputColor.value) {
+				case 'red':
+          this.activeColor = '#eb5d56';
+          break;
+				case 'yellow':
+					this.activeColor = '#f4d22f';
+					break;
+				case 'green':
+					this.activeColor = '#6ebf44';
+					break;
+				case 'blue':
+					this.activeColor = '#52a7f7';
+					break;
+				case 'purple':
+					this.activeColor = '#b36ae0';
+					break;
+      }
 		}
 	}
 

@@ -221,6 +221,10 @@ class BgImageLoader {
 				// Создаем ссылку для меню "поделиться"
 				this.shareTools.firstElementChild.value = window.location.href.replace(/\?id=.*$/, "") + "?id=" + data.id;
 
+				if(this.imageId && this.imageId !== data.id) {
+					location.reload();
+				}
+
 				this.imageId = data.id;
 				this.webSocketConnection = webSocketConnection;
 				this.webSocketConnection.connectToWs(this.imageId);
